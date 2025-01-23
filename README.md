@@ -1,11 +1,11 @@
-# Service Reporting
-## Ressources gérées :
-- Rapports détaillés destinés aux administrateurs et aux reporters
-## Technologies :
-- Java avec Spring Boot
-- Stockage : PostgreSQL (utilisation des données agrégées du service Statistiques)
-- Envoie et récupération des statistiques via un bus de messages RabbitMQ
-## Principales fonctionnalités API :
-- GET /report/detailed : Générer et renvoyer un rapport détaillé.
-- GET /report/export : Permettre l’export des rapports au format CSV.
+# Service de Reporting
 
+Ce projet est une API REST construite avec Express et TypeScript pour générer et exporter des rapports administratifs.
+
+## Installation
+
+1. Clonez ce dépôt.
+2. Installez les dépendances :
+
+```bash
+npm install
