@@ -5,31 +5,41 @@ const router = Router();
 
 /**
  * @swagger
- * /report/detailed:
+ * /report/detailed/{dateParam}:
  *   get:
  *     summary: Générer et renvoyer un rapport détaillé
- *     description: Ce point d'API génère un rapport complet avec les statistiques globales.
+ *     description: Ce point d'API génère un rapport complet avec les statistiques globales pour une date donnée.
+ *     parameters:
+ *       - name: dateParam
+ *         in: path
+ *         description: La date au format JJMMYYYY
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Rapport généré avec succès.
  */
-router.get('/detailed', async (req, res) => {
+router.get('/detailed/:dateParam', async (req, res) => {
     try {
-        const dateParam = "24012025";
+        const { dateParam } = req.params; // Récupération du paramètre dans l'URL
+
+        // Vous pouvez valider ou manipuler `dateParam` si nécessaire ici.
+        // Exemple: vérifier si la dateParam est valide
+
         // Récupération des données d'un autre endpoint (exemple : http://localhost:5000/api/stats)
         const responseSummarize = await fetch('http://localhost:3000/stats/summarize');
-        const responseMatch = await fetch('http://localhost:3000/stats/match/'+dateParam);
-        const responseStore= await fetch('http://localhost:3000/stats/store/'+dateParam);
+        const responseMatch = await fetch(`http://localhost:3000/stats/match/${dateParam}`);
+        const responseStore = await fetch(`http://localhost:3000/stats/store/${dateParam}`);
 
         if (!responseSummarize.ok || !responseMatch.ok || !responseStore.ok) {
             throw new Error(`Erreur sur un ou plusieurs des 3 appels à Statistiques: Retour HTTP Summarize: ${responseSummarize.status},
-        Retour HTTP Match: ${responseMatch.status},Retour HTTP Store: ${responseStore.status} `);
+            Retour HTTP Match: ${responseMatch.status}, Retour HTTP Store: ${responseStore.status}`);
         }
 
         const externalDataSummarize = await responseSummarize.json();
         const externalDataMatch = await responseMatch.json();
         const externalDataStore = await responseStore.json();
-
 
         // Combiner ou utiliser les données récupérées pour générer le rapport
         res.json({
@@ -50,22 +60,34 @@ router.get('/detailed', async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /report/export:
+ * /report/export/{dateParam}:
  *   get:
  *     summary: Générer et renvoyer un rapport détaillé au format csv
- *     description: Ce point d'API génère un rapport complet avec les statistiques globales et retourne un fichier .csv
+ *     description: Ce point d'API génère un rapport complet avec les statistiques globales et retourne un fichier .csv pour une date donnée.
+ *     parameters:
+ *       - name: dateParam
+ *         in: path
+ *         description: La date au format JJMMYYYY
+ *         required: true
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Rapport csv généré avec succès.
  */
-router.get('/export', async (req, res) => {
+router.get('/export/:dateParam', async (req, res) => {
     try {
-        const dateParam = "24012025";
+        const { dateParam } = req.params; // Récupération du paramètre dans l'URL
+
+        // Vous pouvez valider ou manipuler `dateParam` si nécessaire ici.
+        // Exemple : vérifier si la dateParam est valide
+
         const responseSummarize = await fetch('http://localhost:3000/stats/summarize');
-        const responseMatch = await fetch('http://localhost:3000/stats/match/'+dateParam);
-        const responseStore = await fetch('http://localhost:3000/stats/store/'+dateParam);
+        const responseMatch = await fetch(`http://localhost:3000/stats/match/${dateParam}`);
+        const responseStore = await fetch(`http://localhost:3000/stats/store/${dateParam}`);
 
         if (!responseSummarize.ok || !responseMatch.ok || !responseStore.ok) {
             throw new Error(`Erreur sur un ou plusieurs des 3 appels à Statistiques`);
@@ -111,6 +133,7 @@ router.get('/export', async (req, res) => {
     }
 });
 
+// Fonctions de formatage pour les données
 function formatBiggerPlayers(players: any[]) {
     if (!players) return '';
     return players.map(player => `playerId: ${player.playerId}, matches: ${player.matches}`).join('; ');
@@ -130,6 +153,5 @@ function formatBiggerStoreUsers(users: any[]) {
     if (!users) return '';
     return users.map(user => user ? `userId: ${user.userId}, trades: ${user.trades}, purchases: ${user.amountOfPurchases}` : '').join('; ');
 }
-
 
 export default router;
