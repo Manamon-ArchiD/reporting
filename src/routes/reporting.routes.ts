@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Parser } from 'json2csv';
 
 const router = Router();
 
@@ -49,7 +50,6 @@ router.get('/detailed', async (req, res) => {
     }
 });
 
-
 /**
  * @swagger
  * /report/export:
@@ -60,11 +60,76 @@ router.get('/detailed', async (req, res) => {
  *       200:
  *         description: Rapport csv généré avec succès.
  */
-router.get('/export', (req, res) => {
-    res.json({
-        reportId: '123',
-        reportData: [],
-    });
+router.get('/export', async (req, res) => {
+    try {
+        const dateParam = "24012025";
+        const responseSummarize = await fetch('http://localhost:3000/stats/summarize');
+        const responseMatch = await fetch('http://localhost:3000/stats/match/'+dateParam);
+        const responseStore = await fetch('http://localhost:3000/stats/store/'+dateParam);
+
+        if (!responseSummarize.ok || !responseMatch.ok || !responseStore.ok) {
+            throw new Error(`Erreur sur un ou plusieurs des 3 appels à Statistiques`);
+        }
+
+        const externalDataSummarize = await responseSummarize.json();
+        const externalDataMatch = await responseMatch.json();
+        const externalDataStore = await responseStore.json();
+
+        // Préparation des données pour un CSV plus lisible
+        const reportData = {
+            summarize: externalDataSummarize,
+            matchStats: externalDataMatch,
+            storeStats: externalDataStore
+        };
+
+        const flattenData = [
+            {
+                "Number of Matches": reportData.summarize.numberOfMatch,
+                "Bigger Players Ever": formatBiggerPlayers(reportData.summarize.biggerPlayersEver),
+                "Number of Transactions": reportData.summarize.numberOfTrasaction,
+                "Number of Credit Trades": reportData.summarize.numberOfCreditTrade,
+                "Number of Player Accounts": reportData.summarize.numberOfPlayerAccount,
+                "Most Played Hours": formatMostPlayedHours(reportData.matchStats.mostPlayedHours),
+                "Bigger Players of the Day": formatBiggerPlayers(reportData.matchStats.biggerPlayersOfTheDay),
+                "Most Traded Hours": formatMostTradedHours(reportData.storeStats.mostTradedHour),
+                "Total Purchases": reportData.storeStats.totalAmountOfPurchases,
+                "Bigger Store Users of the Day": formatBiggerStoreUsers(reportData.storeStats.biggerStoreUserOfTheDay),
+            }
+        ];
+
+        // Parser pour transformer les données en CSV
+        const parser = new Parser();
+        const csv = parser.parse(flattenData);
+
+        // Envoi du CSV en réponse
+        res.header('Content-Type', 'text/csv');
+        res.attachment('report.csv');
+        res.send(csv);
+
+    } catch (error) {
+        res.status(500).json({ error: 'Impossible de récupérer les données externes' });
+    }
 });
+
+function formatBiggerPlayers(players: any[]) {
+    if (!players) return '';
+    return players.map(player => `playerId: ${player.playerId}, matches: ${player.matches}`).join('; ');
+}
+
+function formatMostPlayedHours(hours: any[]) {
+    if (!hours) return '';
+    return hours.map(hour => hour ? `datetime: "${hour.datetime}", matches: ${hour.matches}` : '').join('; ');
+}
+
+function formatMostTradedHours(trades: any[]) {
+    if (!trades) return '';
+    return trades.map(trade => trade ? `datetime: "${trade.datetime}", trades: ${trade.trades}` : '').join('; ');
+}
+
+function formatBiggerStoreUsers(users: any[]) {
+    if (!users) return '';
+    return users.map(user => user ? `userId: ${user.userId}, trades: ${user.trades}, purchases: ${user.amountOfPurchases}` : '').join('; ');
+}
+
 
 export default router;
