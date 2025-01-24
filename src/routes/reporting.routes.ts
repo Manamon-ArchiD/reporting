@@ -14,19 +14,28 @@ const router = Router();
  */
 router.get('/detailed', async (req, res) => {
   try {
+        const dateParam = "24012025";
       // Récupération des données d'un autre endpoint (exemple : http://localhost:5000/api/stats)
-      const response = await fetch('http://localhost:3000/stats/summarize');
+      const responseSummarize = await fetch('http://localhost:3000/stats/summarize');
+      const responseMatch = await fetch('http://localhost:3000/stats/match'+dateParam);
+      const responseStore= await fetch('http://localhost:3000/stats/summarize'+dateParam);
 
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP ${response.status}`);
+      if (!responseSummarize.ok || !responseMatch.ok || !responseStore.ok) {
+        throw new Error(`Erreur sur un ou plusieurs des 3 appels à Statistiques: Retour HTTP Summarize: ${responseSummarize.status},
+        Retour HTTP Match: ${responseMatch.status},Retour HTTP Store: ${responseStore.status} `);
       }
 
-      const externalData = await response.json();
+      const externalDataSummarize = await responseSummarize.json();
+      const externalDataMatch = await responseMatch.json();
+      const externalDataStore = await responseStore.json();
+
 
       // Combiner ou utiliser les données récupérées pour générer le rapport
       res.json({
-        reportId: '123',
-        reportData: externalData,
+        reportId: 'Votre rapport',
+        reportDataSummarize: externalDataSummarize,
+        reportDataMatch: externalDataMatch,
+        reportDataStore: externalDataStore,
       });
     } catch (error) {
       if (error instanceof Error) {
